@@ -1,43 +1,9 @@
-﻿// Learn more about F# at http://fsharp.org
-// See the 'F# Tutorial' project for more help.
-
-[<StructuredFormatDisplay("C v:{v} c:{c} r:{r}")>]
-type Cell = { v: int Set; c : int; r : int; b : int } with
-    static member create i v =           
-        let (c,r) = (i%9,i/9)
-        let b = r/3*3 + c/3
-        match v with
-        | 0 -> { v=Set.ofSeq [1..9]; c=c; r=r; b=b }
-        | v -> { v=Set.singleton v; c=c; r=r; b=b } 
-                             
+﻿/////////////////////////////////////////////////////////////
+// F# helpers
+/////////////////////////////////////////////////////////////
 
 module Seq =
     let all pred = Seq.fold (fun st x -> st && pred x) true
-
-let createBoard str = 
-    str |>
-    Seq.map (fun ch -> int(ch) - int('0')) |> 
-    Seq.toArray |>
-    Array.mapi Cell.create
-
-let problem = createBoard "000079065000003002005060093340050106000000000608020059950010600700600000820390000"
-
-let emptyBoard = createBoard (String.replicate 81 "0")
-
-let definites cell board =
-    let adj c = 
-        if c.r = cell.r && c.c = cell.c then 
-            false
-        else
-            c.c = cell.c || c.r = cell.r || c.b = cell.b
-    board |> Seq.filter (fun c -> Set.count c.v = 1) |> Seq.filter adj |> Seq.map (fun c -> c.v) |> Seq.concat |> Set.ofSeq
-
-let rec propagateConstraints (board : Cell array) =    
-    let board' = [| for cell in board do yield { cell with v = cell.v - definites cell board  } |]
-    if board = board' then
-        board'
-    else
-        propagateConstraints board'            
 
 module Array =
     let rng = new System.Random()
@@ -51,6 +17,44 @@ module Array =
             array.[i] <- array.[j]
             array.[j] <- tmp
         array
+
+/////////////////////////////////////////////////////////////
+// Types
+/////////////////////////////////////////////////////////////
+
+[<StructuredFormatDisplay("C v:{v} c:{c} r:{r}")>]
+type Cell = { v: int Set; c : int; r : int; b : int } with
+    static member create i v =           
+        let (c,r) = (i%9,i/9)
+        let b = r/3*3 + c/3
+        match v with
+        | 0 -> { v=Set.ofSeq [1..9]; c=c; r=r; b=b }
+        | v -> { v=Set.singleton v; c=c; r=r; b=b } 
+                             
+/////////////////////////////////////////////////////////////
+// Solver
+/////////////////////////////////////////////////////////////
+
+let createBoard str = 
+    str |>
+    Seq.map (fun ch -> int(ch) - int('0')) |> 
+    Seq.toArray |>
+    Array.mapi Cell.create
+
+let definites cell board =
+    let adj c = 
+        if c.r = cell.r && c.c = cell.c then 
+            false
+        else
+            c.c = cell.c || c.r = cell.r || c.b = cell.b
+    board |> Seq.filter (fun c -> Set.count c.v = 1) |> Seq.filter adj |> Seq.map (fun c -> c.v) |> Seq.concat |> Set.ofSeq
+
+let rec propagateConstraints (board : Cell array) =        
+    let board' = [| for cell in board do yield { cell with v = cell.v - definites cell board  } |]
+    if board = board' then
+        board'
+    else
+        propagateConstraints board'            
 
 type SolutionStrategy = First | All
 
@@ -112,10 +116,14 @@ let isValidSolution (boardOption : Cell array option) =
         blocksValid board
     | None -> false
 
-//let solution = solve problem
-//isValidSolution solution |> printfn "%A"
-    
-let fullBoard() = solve emptyBoard |> Option.get
+/////////////////////////////////////////////////////////////
+// Generator
+/////////////////////////////////////////////////////////////
+
+let emptyBoard = createBoard (String.replicate 81 "0")
+
+let fullBoard() = 
+    solve emptyBoard |> Option.get
 
 let generatePuzzle () =
     let candidates = [| 0..9*9-1 |] |> Array.shuffle |> List.ofArray
@@ -136,6 +144,12 @@ let generatePuzzle () =
                     reduce cs (numGiven-1)
 
     reduce candidates 81
+
+/////////////////////////////////////////////////////////////
+// Test
+/////////////////////////////////////////////////////////////
+
+//let problem = createBoard "000079065000003002005060093340050106000000000608020059950010600700600000820390000"
 
 [<EntryPoint>]
 let main argv =     
