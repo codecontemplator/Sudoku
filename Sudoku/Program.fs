@@ -121,7 +121,7 @@ let generatePuzzle () =
     let candidates = [| 0..9*9-1 |] |> Array.shuffle |> List.ofArray
     let board = fullBoard()
     let rec reduce cs numGiven =
-        if numGiven < 25 then
+        if numGiven < 35 then
             board
         else 
             match cs with
